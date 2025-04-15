@@ -5,8 +5,6 @@ from game_logic import BattleshipGame
 class BattleshipServer:
     def __init__(self, host='localhost', port=5555):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((host, port))
-        self.server.listen()
         self.clients = []
         self.game = BattleshipGame()
         
@@ -18,17 +16,26 @@ class BattleshipServer:
         while True:
             try:
                 message = client.recv(1024).decode('utf-8')
-                # Process game moves here
-                self.broadcast(message)
+                if msg.startswith("MOVE:"):
+                    x, y = map(int, msg.split(":")[1].split(","))
+                    result = self.game.make_move(x, y)
+                    self.broadcast(f"RESULT:{x},{y},{result}")
             except:
                 self.clients.remove(client)
                 client.close()
                 break
 
-    def start(self):
+    def start(self, host='localhost', port=5555):
         print("Server started. Waiting for connections...")
+        self.server.bind((host, port))
+        self.server.listen(2)
+        print(f"Server running on {host}:{port}")
         while len(self.clients) < 2:
             client, address = self.server.accept()
             self.clients.append(client)
-            thread = threading.Thread(target=self.handle_client, args=(client,))
-            thread.start()
+            threading.Thread(target=self.handle_client, args=(client,)).start()
+
+
+if __name__ == "__main__":
+    server = Server()
+    server.start()            
