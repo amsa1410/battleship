@@ -1,41 +1,38 @@
 import socket
 import threading
-from game_logic import BattleshipGame
 
-class BattleshipServer:
-    def __init__(self, host='localhost', port=5555):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clients = []
-        self.game = BattleshipGame()
-        
-    def broadcast(self, message):
-        for client in self.clients:
-            client.send(message.encode('utf-8'))
+HOST = '192.168.207.30'  
+PORT = 12345         
 
-    def handle_client(self, client):
+def gerer_client(conn, addr):
+    print(f"Connecté à {addr}")
+
+    try:
         while True:
-            try:
-                message = client.recv(1024).decode('utf-8')
-                if msg.startswith("MOVE:"):
-                    x, y = map(int, msg.split(":")[1].split(","))
-                    result = self.game.make_move(x, y)
-                    self.broadcast(f"RESULT:{x},{y},{result}")
-            except:
-                self.clients.remove(client)
-                client.close()
-                break
+            data = conn.recv(1024)
+            if not data:
+                break  
 
-    def start(self, host='localhost', port=5555):
-        print("Server started. Waiting for connections...")
-        self.server.bind((host, port))
-        self.server.listen(2)
-        print(f"Server running on {host}:{port}")
-        while len(self.clients) < 2:
-            client, address = self.server.accept()
-            self.clients.append(client)
-            threading.Thread(target=self.handle_client, args=(client,)).start()
+            reponse = data.decode('utf-8').upper().encode('utf-8')
+            conn.sendall(reponse)
 
+    finally:
+        conn.close()
+        print(f"Déconnexion de {addr}")
+
+def main():
+    # Créer le socket du serveur
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))  # Associer le socket à l'adresse et au port
+        s.listen()             # Écouter les connexions entrantes
+
+        print(f"Serveur en écoute sur {HOST}:{PORT}")
+
+        while True:
+            conn, addr = s.accept()  # Accepter une nouvelle connexion
+            # Créer un nouveau thread pour gérer le client
+            thread = threading.Thread(target=gerer_client, args=(conn, addr))
+            thread.start()
 
 if __name__ == "__main__":
-    server = Server()
-    server.start()            
+    main()

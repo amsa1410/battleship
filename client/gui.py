@@ -32,3 +32,6 @@ class BattleshipGUI:
             pygame.display.flip()
         pygame.quit()
         return None, None
+    
+    def update(self, message):
+    print(f"Updating GUI with message: {message}")
